@@ -3,7 +3,7 @@ import requests
 import os
 from pathlib import Path
 from datetime import datetime
-from .utils import get_player_details
+from utils import get_player_details
 
 
 def filter_high_confidence_players(result):
