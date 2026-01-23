@@ -112,19 +112,13 @@ def agent_1_extract_team_and_jersey(image_path: str) -> tuple[dict, dict]:
 
     result = agent(f"Can you describe this image: {image_path}")
     
-    # Extract telemetry information
+    # Extract telemetry information from result.metrics
     telemetry = {
-        "input_tokens": 0,
-        "output_tokens": 0
+        "input_tokens": result.metrics.accumulated_usage.get('inputTokens', 0),
+        "output_tokens": result.metrics.accumulated_usage.get('outputTokens', 0)
     }
     
-    # Check if result has usage information
-    if hasattr(result, 'usage'):
-        telemetry["input_tokens"] = getattr(result.usage, 'input_tokens', 0)
-        telemetry["output_tokens"] = getattr(result.usage, 'output_tokens', 0)
-    elif hasattr(result, 'metadata') and hasattr(result.metadata, 'usage'):
-        telemetry["input_tokens"] = getattr(result.metadata.usage, 'input_tokens', 0)
-        telemetry["output_tokens"] = getattr(result.metadata.usage, 'output_tokens', 0)
+    print(f"[DEBUG - Agent 1] Telemetry: Input tokens: {telemetry['input_tokens']}, Output tokens: {telemetry['output_tokens']}")
     
     return json.loads(str(result)), telemetry
 
@@ -177,14 +171,11 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> tuple[dict, 
         
         result = agent(query)
         
-        # Extract telemetry information
-        if hasattr(result, 'usage'):
-            telemetry["input_tokens"] = getattr(result.usage, 'input_tokens', 0)
-            telemetry["output_tokens"] = getattr(result.usage, 'output_tokens', 0)
-        elif hasattr(result, 'metadata') and hasattr(result.metadata, 'usage'):
-            telemetry["input_tokens"] = getattr(result.metadata.usage, 'input_tokens', 0)
-            telemetry["output_tokens"] = getattr(result.metadata.usage, 'output_tokens', 0)
+        # Extract telemetry information from result.metrics
+        telemetry["input_tokens"] = result.metrics.accumulated_usage.get('inputTokens', 0)
+        telemetry["output_tokens"] = result.metrics.accumulated_usage.get('outputTokens', 0)
         
+        print(f"[DEBUG - Agent 2] Telemetry: Input tokens: {telemetry['input_tokens']}, Output tokens: {telemetry['output_tokens']}")
         print(f"[DEBUG - Agent 2] Raw agent response:")
         print(f"[DEBUG - Agent 2] {str(result)}")
         print(f"[DEBUG - Agent 2] Response type: {type(result)}")
