@@ -3,15 +3,15 @@ import requests
 import os
 from pathlib import Path
 from datetime import datetime
-from utils import get_player_details
+from utils import process_player_identification
 
 
 def filter_high_confidence_players(result):
     """
-    Filter players from get_player_details result that have at least two parameters with high confidence.
+    Filter players from process_player_identification result that have at least two parameters with high confidence.
 
     Args:
-        result (dict): Result from get_player_details containing players data
+        result (dict): Result from process_player_identification containing players data
 
     Returns:
         list: List of dictionaries with player_name, player_team, and player_number
@@ -33,17 +33,17 @@ def filter_high_confidence_players(result):
             "player_number": None
         }
 
-        # Check name confidence
-        if "name" in player and player["name"].get("confidence") == "high":
+        # Check player_name confidence (from Agent 2 web search)
+        if "player_name" in player and player["player_name"].get("confidence") == "high":
             high_confidence_count += 1
-            player_info["player_name"] = player["name"].get("value")
+            player_info["player_name"] = player["player_name"].get("value")
 
-        # Check jersey number confidence
+        # Check jersey number confidence (from Agent 1)
         if "jersey_number" in player and player["jersey_number"].get("confidence") == "high":
             high_confidence_count += 1
             player_info["player_number"] = player["jersey_number"].get("value")
 
-        # Check team confidence
+        # Check team confidence (from Agent 1)
         if "team" in player and player["team"].get("confidence") == "high":
             high_confidence_count += 1
             player_info["player_team"] = player["team"].get("name")
@@ -52,7 +52,7 @@ def filter_high_confidence_players(result):
         if high_confidence_count >= 2:
             # Fill in missing values with data from lower confidence or "Unknown"
             if player_info["player_name"] is None:
-                player_info["player_name"] = player.get("name", {}).get("value", "Unknown")
+                player_info["player_name"] = player.get("player_name", {}).get("value", "Unknown")
 
             if player_info["player_number"] is None:
                 player_info["player_number"] = player.get("jersey_number", {}).get("value", "Unknown")
@@ -193,8 +193,8 @@ def main():
 
     print(f"Temporary image path: {temp_image_path}")
 
-    # Get player details from image
-    result = get_player_details(temp_image_path)
+    # Get player details from image (Agent 1 + Agent 2)
+    result = process_player_identification(temp_image_path)
 
     # Filter high confidence players
     filtered_players = filter_high_confidence_players(result)

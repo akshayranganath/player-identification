@@ -4,13 +4,14 @@ Takes an image URL, identifies players using AI, and displays results.
 """
 
 import streamlit as st
+import pandas as pd
 from main import (
     download_image,
     load_player_data,
     filter_high_confidence_players,
     verify_players_in_database,
 )
-from utils import get_player_details
+from utils import process_player_identification
 import os
 
 
@@ -34,8 +35,8 @@ def identify_players(image_url: str) -> tuple[str | None, list[dict]]:
     if not player_data:
         return image_path, []
     
-    # Get player details from AI
-    result = get_player_details(image_path)
+    # Get player details from AI (Agent 1 + Agent 2)
+    result = process_player_identification(image_path)
     
     # Filter high confidence players
     filtered_players = filter_high_confidence_players(result)
@@ -88,12 +89,21 @@ if st.button("Identify Players", type="primary", disabled=not image_url):
                 st.subheader("Identified Players")
                 
                 if players:
+                    # Create table data with explicit headers
+                    table_data = {
+                        "Player Name": [],
+                        "Number": [],
+                        "Team": []
+                    }
+                    
                     for player in players:
-                        name = player.get("player_name", "Unknown")
-                        team = player.get("player_team", "Unknown")
-                        number = player.get("player_number", "?")
-                        
-                        st.markdown(f"**{name}** — #{number}, {team}")
+                        table_data["Player Name"].append(player.get("player_name", "Unknown"))
+                        table_data["Number"].append(player.get("player_number", "?"))
+                        table_data["Team"].append(player.get("player_team", "Unknown"))
+                    
+                    # Display as DataFrame table
+                    df = pd.DataFrame(table_data)
+                    st.table(df)
                 else:
                     st.info("No players identified with high confidence.")
                 
