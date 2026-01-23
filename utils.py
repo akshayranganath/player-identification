@@ -94,7 +94,7 @@ def web_search_tool(query: str) -> str:
         return error_result
 
 
-def agent_1_extract_team_and_jersey(image_path: str) -> dict:
+def agent_1_extract_team_and_jersey(image_path: str) -> tuple[dict, dict]:
     """
     Agent 1: Extracts team name and jersey number from image using vision model.
     
@@ -102,7 +102,7 @@ def agent_1_extract_team_and_jersey(image_path: str) -> dict:
         image_path: Path to the player image
         
     Returns:
-        dict: JSON containing player details (team name, jersey number)
+        tuple: (player_data dict, telemetry dict with input_tokens and output_tokens)
     """
     agent = Agent(
         system_prompt=MULTIMODAL_SYSTEM_PROMPT,
@@ -111,10 +111,25 @@ def agent_1_extract_team_and_jersey(image_path: str) -> dict:
     )
 
     result = agent(f"Can you describe this image: {image_path}")
-    return json.loads(str(result))
+    
+    # Extract telemetry information
+    telemetry = {
+        "input_tokens": 0,
+        "output_tokens": 0
+    }
+    
+    # Check if result has usage information
+    if hasattr(result, 'usage'):
+        telemetry["input_tokens"] = getattr(result.usage, 'input_tokens', 0)
+        telemetry["output_tokens"] = getattr(result.usage, 'output_tokens', 0)
+    elif hasattr(result, 'metadata') and hasattr(result.metadata, 'usage'):
+        telemetry["input_tokens"] = getattr(result.metadata.usage, 'input_tokens', 0)
+        telemetry["output_tokens"] = getattr(result.metadata.usage, 'output_tokens', 0)
+    
+    return json.loads(str(result)), telemetry
 
 
-def agent_2_find_player_name(team_name: str, jersey_number: str) -> dict:
+def agent_2_find_player_name(team_name: str, jersey_number: str) -> tuple[dict, dict]:
     """
     Agent 2: Uses a strands agent with web search tool to find player name based on team and jersey number.
     
@@ -123,7 +138,7 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> dict:
         jersey_number: Player's jersey number
         
     Returns:
-        dict: Structured JSON with playerName, confidence, reasoning, and sources
+        tuple: (player_data dict, telemetry dict with input_tokens and output_tokens)
         
     Confidence Guidelines:
         - HIGH: Multiple authoritative sources confirm the same player name
@@ -131,6 +146,11 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> dict:
         - LOW: Very few results, conflicting information, or unclear matches
     """
     print(f"\n[DEBUG - Agent 2] Starting search for Team={team_name}, Jersey={jersey_number}")
+    
+    telemetry = {
+        "input_tokens": 0,
+        "output_tokens": 0
+    }
     
     if not SERP_API_KEY:
         print(f"[DEBUG - Agent 2] ERROR: SERP_API_KEY not found")
@@ -140,7 +160,7 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> dict:
             "error": "SERP_API_KEY not found in environment variables",
             "reasoning": "Cannot perform web search without API key",
             "sources": []
-        }
+        }, telemetry
     
     try:
         # Create agent with web search tool
@@ -156,6 +176,14 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> dict:
         print(f"[DEBUG - Agent 2] Sending query to agent: {query}")
         
         result = agent(query)
+        
+        # Extract telemetry information
+        if hasattr(result, 'usage'):
+            telemetry["input_tokens"] = getattr(result.usage, 'input_tokens', 0)
+            telemetry["output_tokens"] = getattr(result.usage, 'output_tokens', 0)
+        elif hasattr(result, 'metadata') and hasattr(result.metadata, 'usage'):
+            telemetry["input_tokens"] = getattr(result.metadata.usage, 'input_tokens', 0)
+            telemetry["output_tokens"] = getattr(result.metadata.usage, 'output_tokens', 0)
         
         print(f"[DEBUG - Agent 2] Raw agent response:")
         print(f"[DEBUG - Agent 2] {str(result)}")
@@ -180,7 +208,7 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> dict:
         if "sources" not in result_dict:
             result_dict["sources"] = []
             
-        return result_dict
+        return result_dict, telemetry
         
     except json.JSONDecodeError as e:
         print(f"[DEBUG - Agent 2] JSON Parse Error: {str(e)}")
@@ -191,7 +219,7 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> dict:
             "error": f"Failed to parse agent response: {str(e)}",
             "reasoning": "Agent returned invalid JSON",
             "sources": []
-        }
+        }, telemetry
     except Exception as e:
         print(f"[DEBUG - Agent 2] Exception: {str(e)}")
         print(f"[DEBUG - Agent 2] Traceback:")
@@ -202,10 +230,10 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> dict:
             "error": f"Search failed: {str(e)}",
             "reasoning": "An error occurred during the search",
             "sources": []
-        }
+        }, telemetry
 
 
-def process_player_identification(image_path: str) -> dict:
+def process_player_identification(image_path: str) -> tuple[dict, dict]:
     """
     Main orchestration function that runs both agents in sequence.
     
@@ -213,19 +241,31 @@ def process_player_identification(image_path: str) -> dict:
         image_path: Path to the player image
         
     Returns:
-        dict: Complete player identification with team, jersey, and name
+        tuple: (player_data dict, telemetry dict with agent breakdown)
     """
     print(f"\n{'='*60}")
     print(f"Processing image: {image_path}")
     print(f"{'='*60}")
     
+    # Initialize telemetry tracking
+    telemetry = {
+        "agent_1": {"input_tokens": 0, "output_tokens": 0},
+        "agent_2": {"input_tokens": 0, "output_tokens": 0},
+        "total": {"input_tokens": 0, "output_tokens": 0}
+    }
+    
     # Agent 1: Extract team name and jersey number
     print("\n[Agent 1] Extracting team name and jersey number from image...")
-    vision_results = agent_1_extract_team_and_jersey(image_path)
+    vision_results, agent_1_telemetry = agent_1_extract_team_and_jersey(image_path)
+    
+    # Update telemetry for Agent 1
+    telemetry["agent_1"] = agent_1_telemetry
+    telemetry["total"]["input_tokens"] += agent_1_telemetry["input_tokens"]
+    telemetry["total"]["output_tokens"] += agent_1_telemetry["output_tokens"]
     
     if "error" in vision_results:
         print(f"[Agent 1] Error: {vision_results['error']}")
-        return vision_results
+        return vision_results, telemetry
     
     print(f"[Agent 1] Extraction complete!")
     
@@ -243,7 +283,13 @@ def process_player_identification(image_path: str) -> dict:
             
             # Agent 2: Search for player name
             if team_name != "Unknown" and jersey_number != -1:
-                search_results = agent_2_find_player_name(team_name, jersey_number)
+                search_results, agent_2_telemetry = agent_2_find_player_name(team_name, jersey_number)
+                
+                # Update telemetry for Agent 2 (accumulate if multiple players)
+                telemetry["agent_2"]["input_tokens"] += agent_2_telemetry["input_tokens"]
+                telemetry["agent_2"]["output_tokens"] += agent_2_telemetry["output_tokens"]
+                telemetry["total"]["input_tokens"] += agent_2_telemetry["input_tokens"]
+                telemetry["total"]["output_tokens"] += agent_2_telemetry["output_tokens"]
                 
                 # Add player_name field with structured confidence
                 player["player_name"] = {
@@ -271,15 +317,22 @@ def process_player_identification(image_path: str) -> dict:
                 }
                 print(f"[Agent 2] Skipped - insufficient information")
     
-    return enhanced_results
+    return enhanced_results, telemetry
 
 
 if __name__=="__main__":
     # Test with a sample image
     test_image = "/Users/akshayranganath/Projects/aws-hackathon/player-identification/data/5.jpg"
-    result = process_player_identification(test_image)
+    result, telemetry = process_player_identification(test_image)
     
     print('\n' + '='*60)
     print('**** Final Results ****')
     print('='*60)
     print(json.dumps(result, indent=2))
+    
+    print('\n' + '='*60)
+    print('**** Telemetry ****')
+    print('='*60)
+    print(f"Agent 1: Input tokens: {telemetry['agent_1']['input_tokens']}, Output tokens: {telemetry['agent_1']['output_tokens']}")
+    print(f"Agent 2: Input tokens: {telemetry['agent_2']['input_tokens']}, Output tokens: {telemetry['agent_2']['output_tokens']}")
+    print(f"Total: Input tokens: {telemetry['total']['input_tokens']}, Output tokens: {telemetry['total']['output_tokens']}")

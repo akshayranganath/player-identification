@@ -15,7 +15,7 @@ from utils import process_player_identification
 import os
 
 
-def identify_players(image_url: str) -> tuple[str | None, list[dict]]:
+def identify_players(image_url: str) -> tuple[str | None, list[dict], dict]:
     """
     Process an image URL and identify players.
     
@@ -23,20 +23,20 @@ def identify_players(image_url: str) -> tuple[str | None, list[dict]]:
         image_url: URL of the image to analyze
         
     Returns:
-        Tuple of (image_path, list of verified players)
+        Tuple of (image_path, list of verified players, telemetry dict)
     """
     # Download the image
     image_path = download_image(image_url)
     if not image_path:
-        return None, []
+        return None, [], {}
     
     # Load player database
     player_data = load_player_data()
     if not player_data:
-        return image_path, []
+        return image_path, [], {}
     
     # Get player details from AI (Agent 1 + Agent 2)
-    result = process_player_identification(image_path)
+    result, telemetry = process_player_identification(image_path)
     
     # Filter high confidence players
     filtered_players = filter_high_confidence_players(result)
@@ -44,7 +44,7 @@ def identify_players(image_url: str) -> tuple[str | None, list[dict]]:
     # Verify against database
     verified_players = verify_players_in_database(filtered_players, player_data)
     
-    return image_path, verified_players
+    return image_path, verified_players, telemetry
 
 
 def cleanup_temp_image(image_path: str) -> None:
@@ -79,7 +79,7 @@ if st.button("Identify Players", type="primary", disabled=not image_url):
     if image_url:
         with st.spinner("Analyzing image..."):
             try:
-                image_path, players = identify_players(image_url)
+                image_path, players, telemetry = identify_players(image_url)
                 
                 # Show the image thumbnail
                 st.subheader("Image")
@@ -106,6 +106,25 @@ if st.button("Identify Players", type="primary", disabled=not image_url):
                     st.table(df)
                 else:
                     st.info("No players identified with high confidence.")
+                
+                # Show telemetry information
+                if telemetry:
+                    st.subheader("Token Usage")
+                    telemetry_data = {
+                        "Agent": ["Agent 1", "Agent 2", "Total"],
+                        "Input Tokens": [
+                            telemetry.get("agent_1", {}).get("input_tokens", 0),
+                            telemetry.get("agent_2", {}).get("input_tokens", 0),
+                            telemetry.get("total", {}).get("input_tokens", 0)
+                        ],
+                        "Output Tokens": [
+                            telemetry.get("agent_1", {}).get("output_tokens", 0),
+                            telemetry.get("agent_2", {}).get("output_tokens", 0),
+                            telemetry.get("total", {}).get("output_tokens", 0)
+                        ]
+                    }
+                    telemetry_df = pd.DataFrame(telemetry_data)
+                    st.table(telemetry_df)
                 
                 # Cleanup temp file
                 cleanup_temp_image(image_path)

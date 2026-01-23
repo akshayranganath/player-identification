@@ -194,7 +194,7 @@ def main():
     print(f"Temporary image path: {temp_image_path}")
 
     # Get player details from image (Agent 1 + Agent 2)
-    result = process_player_identification(temp_image_path)
+    result, telemetry = process_player_identification(temp_image_path)
 
     # Filter high confidence players
     filtered_players = filter_high_confidence_players(result)
@@ -207,6 +207,14 @@ def main():
     print("Identified Players:")
     print("="*50)
     print(json.dumps(verified_players, indent=2))
+    
+    # Output telemetry information
+    print("\n" + "="*50)
+    print("Token Usage (Telemetry):")
+    print("="*50)
+    print(f"Agent 1: Input tokens: {telemetry['agent_1']['input_tokens']}, Output tokens: {telemetry['agent_1']['output_tokens']}")
+    print(f"Agent 2: Input tokens: {telemetry['agent_2']['input_tokens']}, Output tokens: {telemetry['agent_2']['output_tokens']}")
+    print(f"Total: Input tokens: {telemetry['total']['input_tokens']}, Output tokens: {telemetry['total']['output_tokens']}")
     
 
 
