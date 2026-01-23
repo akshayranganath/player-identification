@@ -1,0 +1,132 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+*.env
+credentials.json
+secrets.json
+.aws/
+.aws-sam/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+*.cover
+*.log
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Streamlit
+.streamlit/secrets.toml
+.streamlit/config.toml
+
+# Temporary Files
+temp_*
+tmp_*
+*.tmp
+temp_image_*
+downloaded_*
+
+# Data Files (uncomment if you want to ignore data)
+# *.csv
+# *.json
+# *.db
+# *.sqlite
+# data/
+
+# Documentation builds
+docs/_build/
+site/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# UV lock file (uncomment if you don't want to commit it)
+# uv.lock
+
+# Project-specific
+debug_page.html

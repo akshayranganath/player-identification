@@ -3,6 +3,16 @@ CFL Player Identification Prompt
 Prompt for identifying Canadian Football League players from images with JSON output
 """
 
+import logging
+
+# Configure logging (only if not already configured by parent app)
+if not logging.getLogger().hasHandlers():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+logger = logging.getLogger(__name__)
+
 CFL_PLAYER_IDENTIFICATION_PROMPT = """
 Analyze this image and identify any CFL (Canadian Football League) players visible. Return your analysis as valid JSON following this exact structure:
 
@@ -14,11 +24,7 @@ Analyze this image and identify any CFL (Canadian Football League) players visib
   },
   "players": [
     {
-      "player_id": 1,
-      "name": {
-        "value": "<player name or 'Unknown'>",
-        "confidence": "<high|medium|low>"
-      },
+      "player_id": 1,      
       "jersey_number": {
         "value": "<number>",
         "confidence": "<high|medium|low>"
@@ -27,11 +33,7 @@ Analyze this image and identify any CFL (Canadian Football League) players visib
         "name": "<team name>",
         "colors_visible": ["<color1>", "<color2>"],
         "confidence": "<high|medium|low>"
-      },
-      "position": {
-        "value": "<position or 'Unknown'>",
-        "confidence": "<high|medium|low>"
-      },
+      },      
       "visual_evidence": [
         "<evidence point 1>",
         "<evidence point 2>"
@@ -57,19 +59,15 @@ CONFIDENCE LEVEL GUIDELINES:
 - LOW: Inference based on context clues (body type, position on field, etc.)
 
 CRITICAL RULES:
-- OMIT "jersey_number" field entirely if number is not clearly visible or readable
-- OMIT "team" object entirely if team cannot be confidently determined from uniform/logos
-- Each field (name, jersey_number, team, position) has its own confidence level
+- SET "jersey_number" field to -1 if number is not clearly visible or readable
+- SET "team" to "Unknown" if team cannot be confidently determined from uniform/logos
+- Each field (jersey_number, team, position) has its own confidence level
 - "overall_confidence" represents the combined confidence across all identifications for that player
 - Be conservative with identifications - if confidence would be "low", consider omitting the field
 
 Example with mixed confidence:
 {
-  "player_id": 1,
-  "name": {
-    "value": "Unknown",
-    "confidence": "low"
-  },
+  "player_id": 1,  
   "jersey_number": {
     "value": "23",
     "confidence": "high"
@@ -92,7 +90,12 @@ Example with mixed confidence:
   "overall_confidence": "high"
 }
 
-Return ONLY the JSON, no additional text before or after.
+CRITICAL RESPONSE REQUIREMENTS:
+- Your ENTIRE response must be valid JSON that can be parsed by json.loads()
+- Do NOT add any explanations, markdown formatting, or text outside the JSON
+- Do NOT wrap the JSON in ```json code blocks
+- Start your response with { and end with }
+- Return ONLY the JSON object, nothing else
 
 If you cannot identify any players with reasonable confidence, return:
 {
@@ -103,13 +106,66 @@ If you cannot identify any players with reasonable confidence, return:
 """
 
 
+PLAYER_NAME_SEARCH_PROMPT = """
+You are an expert at finding CFL (Canadian Football League) player names using web search.
+
+Your task is to search for and identify a CFL player based on their team name and jersey number.
+
+INSTRUCTIONS:
+1. Use the web_search_tool to search for the player
+2. Construct an effective search query like "Canadian Football League [team_name] jersey number [number] player name"
+3. Analyze the search results carefully
+4. Extract the player name and assess confidence based on these guidelines:
+
+CONFIDENCE GUIDELINES:
+- HIGH: Multiple authoritative sources (cfl.ca, wikipedia.org, espn.com, tsn.ca, sportsnet.ca) confirm the same player name
+- MEDIUM: Search results suggest a player name but with some ambiguity or fewer authoritative sources
+- LOW: Very few results, conflicting information, or unclear matches
+
+AUTHORITATIVE SOURCES:
+- cfl.ca (Official CFL website)
+- https://www.bluebombers.com/roster/
+- wikipedia.org
+- espn.com
+- tsn.ca
+- sportsnet.ca
+
+RESPONSE FORMAT:
+You MUST return ONLY a valid JSON object. Do NOT include any text before or after the JSON.
+
+Your response must be valid JSON that can be parsed by json.loads() in Python.
+
+Return exactly this structure:
+{
+  "player_name": "<player full name or 'Unknown'>",
+  "confidence": "<high|medium|low>",
+  "reasoning": "<brief explanation of why you chose this name and confidence level>",
+  "sources": ["<list of key sources used>"]
+}
+
+CRITICAL RULES:
+- If you cannot find a clear answer, set player_name to "Unknown" and confidence to "low"
+- Be conservative - if information is conflicting or unclear, lower the confidence
+- Prioritize information from authoritative sources
+- Your ENTIRE response must be valid JSON - nothing else
+- Do NOT add explanations, markdown formatting, or any text outside the JSON object
+- Do NOT wrap the JSON in ```json code blocks
+- Start your response with { and end with }
+"""
+
+
 def get_prompt():
     """Return the CFL player identification prompt."""
     return CFL_PLAYER_IDENTIFICATION_PROMPT
 
 
+def get_player_search_prompt():
+    """Return the player name search prompt."""
+    return PLAYER_NAME_SEARCH_PROMPT
+
+
 # Example usage
 if __name__ == "__main__":
-    print("CFL Player Identification Prompt")
-    print("=" * 50)
-    print(get_prompt())
+    logger.info("CFL Player Identification Prompt")
+    logger.info("=" * 50)
+    logger.info(get_prompt())
