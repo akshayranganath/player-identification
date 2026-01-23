@@ -1,10 +1,16 @@
 """
 Streamlit app for CFL Player Identification.
 Takes an image URL, identifies players using AI, and displays results.
+
+Usage:
+    uv run streamlit run app.py               # Normal mode (INFO level)
+    uv run streamlit run app.py -- --verbose  # Verbose mode (DEBUG level)
 """
 
 import streamlit as st
 import pandas as pd
+import logging
+import sys
 from main import (
     download_image,
     load_player_data,
@@ -13,6 +19,25 @@ from main import (
 )
 from utils import process_player_identification
 import os
+
+# Parse command line arguments for verbose flag
+verbose_mode = False
+if '--verbose' in sys.argv or '-v' in sys.argv:
+    verbose_mode = True
+
+# Configure logging based on verbose flag
+log_level = logging.DEBUG if verbose_mode else logging.INFO
+logging.basicConfig(
+    level=log_level,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    force=True  # Force reconfiguration if already configured
+)
+logger = logging.getLogger(__name__)
+
+if verbose_mode:
+    logger.info("Verbose logging enabled (DEBUG level)")
+else:
+    logger.info("Standard logging enabled (INFO level)")
 
 
 def identify_players(image_url: str) -> tuple[str | None, list[dict], dict]:
@@ -25,14 +50,20 @@ def identify_players(image_url: str) -> tuple[str | None, list[dict], dict]:
     Returns:
         Tuple of (image_path, list of verified players, telemetry dict)
     """
+    logger.info(f"Starting player identification for image URL: {image_url}")
+    
     # Download the image
     image_path = download_image(image_url)
     if not image_path:
+        logger.warning("Failed to download image")
         return None, [], {}
+    
+    logger.debug(f"Image downloaded to: {image_path}")
     
     # Load player database
     player_data = load_player_data()
     if not player_data:
+        logger.warning("Failed to load player database")
         return image_path, [], {}
     
     # Get player details from AI (Agent 1 + Agent 2)
@@ -40,9 +71,11 @@ def identify_players(image_url: str) -> tuple[str | None, list[dict], dict]:
     
     # Filter high confidence players
     filtered_players = filter_high_confidence_players(result)
+    logger.info(f"Filtered {len(filtered_players)} high-confidence players")
     
     # Verify against database
     verified_players = verify_players_in_database(filtered_players, player_data)
+    logger.info(f"Verified {len(verified_players)} players against database")
     
     return image_path, verified_players, telemetry
 
@@ -52,8 +85,9 @@ def cleanup_temp_image(image_path: str) -> None:
     try:
         if image_path and os.path.exists(image_path):
             os.remove(image_path)
-    except Exception:
-        pass
+            logger.debug(f"Cleaned up temporary image: {image_path}")
+    except Exception as e:
+        logger.warning(f"Failed to cleanup temporary image {image_path}: {str(e)}")
 
 
 # Page config
@@ -130,6 +164,7 @@ if st.button("Identify Players", type="primary", disabled=not image_url):
                 cleanup_temp_image(image_path)
                 
             except Exception as e:
+                logger.error(f"Error processing image: {str(e)}", exc_info=True)
                 st.error(f"Error processing image: {str(e)}")
 
 # Footer

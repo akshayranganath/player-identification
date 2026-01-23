@@ -4,10 +4,20 @@ from strands_tools import image_reader
 from prompt import get_prompt, get_player_search_prompt
 import json
 import os
+import re
 import traceback
+import logging
 from dotenv import load_dotenv
 from serpapi.google_search import GoogleSearch
 from typing import Any
+
+# Configure logging (only if not already configured by parent app)
+if not logging.getLogger().hasHandlers():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -31,14 +41,14 @@ def web_search_tool(query: str) -> str:
     Returns:
         str: JSON string containing search results with titles, snippets, and links
     """
-    print(f"\n[DEBUG - web_search_tool] Query: {query}")
+    logger.debug(f"[web_search_tool] Query: {query}")
     
     if not SERP_API_KEY:
         error_result = json.dumps({
             "error": "SERP_API_KEY not found in environment variables",
             "results": []
         })
-        print(f"[DEBUG - web_search_tool] ERROR: No API key")
+        logger.debug("[web_search_tool] ERROR: No API key")
         return error_result
     
     try:
@@ -57,7 +67,7 @@ def web_search_tool(query: str) -> str:
                 "message": "No search results found",
                 "results": []
             })
-            print(f"[DEBUG - web_search_tool] No organic results found")
+            logger.debug("[web_search_tool] No organic results found")
             return no_results
         
         # Format results for the LLM
@@ -70,12 +80,12 @@ def web_search_tool(query: str) -> str:
                 "link": result.get("link", "")
             })
         
-        print(f"[DEBUG - web_search_tool] Found {len(formatted_results)} results")
-        print(f"[DEBUG - web_search_tool] Top 3 results:")
+        logger.debug(f"[web_search_tool] Found {len(formatted_results)} results")
+        logger.debug("[web_search_tool] Top 3 results:")
         for i, r in enumerate(formatted_results[:3]):
-            print(f"  {i+1}. {r['title']}")
-            print(f"     Link: {r['link']}")
-            print(f"     Snippet: {r['snippet'][:100]}...")
+            logger.debug(f"  {i+1}. {r['title']}")
+            logger.debug(f"     Link: {r['link']}")
+            logger.debug(f"     Snippet: {r['snippet'][:100]}...")
         
         search_result = json.dumps({
             "query": query,
@@ -90,7 +100,7 @@ def web_search_tool(query: str) -> str:
             "error": f"Search failed: {str(e)}",
             "results": []
         })
-        print(f"[DEBUG - web_search_tool] Exception: {str(e)}")
+        logger.debug(f"[web_search_tool] Exception: {str(e)}")
         return error_result
 
 
@@ -118,9 +128,48 @@ def agent_1_extract_team_and_jersey(image_path: str) -> tuple[dict, dict]:
         "output_tokens": result.metrics.accumulated_usage.get('outputTokens', 0)
     }
     
-    print(f"[DEBUG - Agent 1] Telemetry: Input tokens: {telemetry['input_tokens']}, Output tokens: {telemetry['output_tokens']}")
+    logger.info(f"[Agent 1] Telemetry: Input tokens: {telemetry['input_tokens']}, Output tokens: {telemetry['output_tokens']}")
     
-    return json.loads(str(result)), telemetry
+    # Get raw response
+    raw_response = str(result)
+    logger.debug(f"[Agent 1] Raw response (first 200 chars): {raw_response[:200]}")
+    
+    # Parse the agent's response with robust error handling
+    try:
+        result_dict = json.loads(raw_response)
+    except json.JSONDecodeError as json_error:
+        logger.warning(f"[Agent 1] Initial JSON parse failed, attempting to extract JSON from response")
+        
+        # Try to remove markdown code blocks
+        cleaned_response = re.sub(r'^```(?:json)?\s*\n?', '', raw_response.strip())
+        cleaned_response = re.sub(r'\n?```\s*$', '', cleaned_response.strip())
+        
+        try:
+            result_dict = json.loads(cleaned_response)
+            logger.info("[Agent 1] Successfully parsed JSON after removing markdown code blocks")
+        except json.JSONDecodeError:
+            # Look for JSON between curly braces
+            json_match = re.search(r'\{.*\}', raw_response, re.DOTALL)
+            if json_match:
+                try:
+                    result_dict = json.loads(json_match.group(0))
+                    logger.info("[Agent 1] Successfully extracted JSON from wrapped response")
+                except json.JSONDecodeError:
+                    logger.error(f"[Agent 1] Failed to parse agent response as JSON")
+                    logger.error(f"[Agent 1] Raw response (first 500 chars): {raw_response[:500]}")
+                    return {
+                        "error": "Failed to parse vision model response",
+                        "reason": str(json_error)
+                    }, telemetry
+            else:
+                logger.error(f"[Agent 1] No JSON found in response")
+                logger.error(f"[Agent 1] Raw response (first 500 chars): {raw_response[:500]}")
+                return {
+                    "error": "No valid JSON found in vision model response",
+                    "reason": str(json_error)
+                }, telemetry
+    
+    return result_dict, telemetry
 
 
 def agent_2_find_player_name(team_name: str, jersey_number: str) -> tuple[dict, dict]:
@@ -139,7 +188,7 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> tuple[dict, 
         - MEDIUM: Search results suggest a player name but with some ambiguity or fewer authoritative sources
         - LOW: Very few results, conflicting information, or unclear matches
     """
-    print(f"\n[DEBUG - Agent 2] Starting search for Team={team_name}, Jersey={jersey_number}")
+    logger.debug(f"[Agent 2] Starting search for Team={team_name}, Jersey={jersey_number}")
     
     telemetry = {
         "input_tokens": 0,
@@ -147,9 +196,9 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> tuple[dict, 
     }
     
     if not SERP_API_KEY:
-        print(f"[DEBUG - Agent 2] ERROR: SERP_API_KEY not found")
+        logger.debug("[Agent 2] ERROR: SERP_API_KEY not found")
         return {
-            "playerName": "Unknown",
+            "player_name": "Unknown",
             "confidence": "low",
             "error": "SERP_API_KEY not found in environment variables",
             "reasoning": "Cannot perform web search without API key",
@@ -158,7 +207,7 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> tuple[dict, 
     
     try:
         # Create agent with web search tool
-        print(f"[DEBUG - Agent 2] Creating agent with web_search_tool")
+        logger.debug("[Agent 2] Creating agent with web_search_tool")
         agent = Agent(
             system_prompt=get_player_search_prompt(),
             tools=[web_search_tool],
@@ -167,7 +216,7 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> tuple[dict, 
         
         # Ask agent to find the player
         query = f"Find the name of the CFL player who plays for {team_name} and wears jersey number {jersey_number}"
-        print(f"[DEBUG - Agent 2] Sending query to agent: {query}")
+        logger.debug(f"[Agent 2] Sending query to agent: {query}")
         
         result = agent(query)
         
@@ -175,23 +224,55 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> tuple[dict, 
         telemetry["input_tokens"] = result.metrics.accumulated_usage.get('inputTokens', 0)
         telemetry["output_tokens"] = result.metrics.accumulated_usage.get('outputTokens', 0)
         
-        print(f"[DEBUG - Agent 2] Telemetry: Input tokens: {telemetry['input_tokens']}, Output tokens: {telemetry['output_tokens']}")
-        print(f"[DEBUG - Agent 2] Raw agent response:")
-        print(f"[DEBUG - Agent 2] {str(result)}")
-        print(f"[DEBUG - Agent 2] Response type: {type(result)}")
+        logger.info(f"[Agent 2] Telemetry: Input tokens: {telemetry['input_tokens']}, Output tokens: {telemetry['output_tokens']}")
+        
+        # Get raw response as string
+        raw_response = str(result)
+        logger.debug(f"[Agent 2] Raw agent response:")
+        logger.debug(f"[Agent 2] {raw_response}")
+        logger.debug(f"[Agent 2] Response type: {type(result)}")
         
         # Parse the agent's response
-        result_dict = json.loads(str(result))
+        try:
+            result_dict = json.loads(raw_response)
+        except json.JSONDecodeError as json_error:
+            # Try to extract JSON from the response (sometimes LLMs wrap JSON in text or markdown)
+            logger.warning(f"[Agent 2] Initial JSON parse failed, attempting to extract JSON from response")
+            
+            # First, try to remove markdown code blocks (```json ... ```)
+            cleaned_response = re.sub(r'^```(?:json)?\s*\n?', '', raw_response.strip())
+            cleaned_response = re.sub(r'\n?```\s*$', '', cleaned_response.strip())
+            
+            # Try parsing the cleaned response
+            try:
+                result_dict = json.loads(cleaned_response)
+                logger.info("[Agent 2] Successfully parsed JSON after removing markdown code blocks")
+            except json.JSONDecodeError:
+                # Look for JSON between curly braces as last resort
+                json_match = re.search(r'\{.*\}', raw_response, re.DOTALL)
+                if json_match:
+                    try:
+                        result_dict = json.loads(json_match.group(0))
+                        logger.info("[Agent 2] Successfully extracted JSON from wrapped response")
+                    except json.JSONDecodeError:
+                        # Re-raise original error with more context
+                        logger.error(f"[Agent 2] Failed to parse agent response as JSON")
+                        logger.error(f"[Agent 2] Raw response (first 500 chars): {raw_response[:500]}")
+                        raise json_error
+                else:
+                    logger.error(f"[Agent 2] No JSON found in response")
+                    logger.error(f"[Agent 2] Raw response (first 500 chars): {raw_response[:500]}")
+                    raise json_error
         
-        print(f"[DEBUG - Agent 2] Parsed response:")
-        print(f"[DEBUG - Agent 2]   Player Name: {result_dict.get('playerName', 'N/A')}")
-        print(f"[DEBUG - Agent 2]   Confidence: {result_dict.get('confidence', 'N/A')}")
-        print(f"[DEBUG - Agent 2]   Reasoning: {result_dict.get('reasoning', 'N/A')}")
-        print(f"[DEBUG - Agent 2]   Sources: {result_dict.get('sources', [])}")
+        logger.debug("[Agent 2] Parsed response:")
+        logger.debug(f"[Agent 2]   Player Name: {result_dict.get('player_name', 'N/A')}")
+        logger.debug(f"[Agent 2]   Confidence: {result_dict.get('confidence', 'N/A')}")
+        logger.debug(f"[Agent 2]   Reasoning: {result_dict.get('reasoning', 'N/A')}")
+        logger.debug(f"[Agent 2]   Sources: {result_dict.get('sources', [])}")
         
         # Ensure all expected fields are present
-        if "playerName" not in result_dict:
-            result_dict["playerName"] = "Unknown"
+        if "player_name" not in result_dict:
+            result_dict["player_name"] = "Unknown"
         if "confidence" not in result_dict:
             result_dict["confidence"] = "low"
         if "reasoning" not in result_dict:
@@ -202,21 +283,21 @@ def agent_2_find_player_name(team_name: str, jersey_number: str) -> tuple[dict, 
         return result_dict, telemetry
         
     except json.JSONDecodeError as e:
-        print(f"[DEBUG - Agent 2] JSON Parse Error: {str(e)}")
-        print(f"[DEBUG - Agent 2] Failed to parse: {str(result)}")
+        logger.error(f"[Agent 2] JSON Parse Error: {str(e)}")
+        logger.error(f"[Agent 2] This usually means the LLM didn't follow the prompt format")
+        logger.error(f"[Agent 2] Enable --verbose mode to see the full raw response")
         return {
-            "playerName": "Unknown",
+            "player_name": "Unknown",
             "confidence": "low",
             "error": f"Failed to parse agent response: {str(e)}",
             "reasoning": "Agent returned invalid JSON",
             "sources": []
         }, telemetry
     except Exception as e:
-        print(f"[DEBUG - Agent 2] Exception: {str(e)}")
-        print(f"[DEBUG - Agent 2] Traceback:")
-        traceback.print_exc()
+        logger.error(f"[Agent 2] Exception: {str(e)}")
+        logger.debug("[Agent 2] Traceback:", exc_info=True)
         return {
-            "playerName": "Unknown",
+            "player_name": "Unknown",
             "confidence": "low",
             "error": f"Search failed: {str(e)}",
             "reasoning": "An error occurred during the search",
@@ -234,9 +315,9 @@ def process_player_identification(image_path: str) -> tuple[dict, dict]:
     Returns:
         tuple: (player_data dict, telemetry dict with agent breakdown)
     """
-    print(f"\n{'='*60}")
-    print(f"Processing image: {image_path}")
-    print(f"{'='*60}")
+    logger.info(f"{'='*60}")
+    logger.info(f"Processing image: {image_path}")
+    logger.info(f"{'='*60}")
     
     # Initialize telemetry tracking
     telemetry = {
@@ -246,7 +327,7 @@ def process_player_identification(image_path: str) -> tuple[dict, dict]:
     }
     
     # Agent 1: Extract team name and jersey number
-    print("\n[Agent 1] Extracting team name and jersey number from image...")
+    logger.info("[Agent 1] Extracting team name and jersey number from image...")
     vision_results, agent_1_telemetry = agent_1_extract_team_and_jersey(image_path)
     
     # Update telemetry for Agent 1
@@ -255,10 +336,10 @@ def process_player_identification(image_path: str) -> tuple[dict, dict]:
     telemetry["total"]["output_tokens"] += agent_1_telemetry["output_tokens"]
     
     if "error" in vision_results:
-        print(f"[Agent 1] Error: {vision_results['error']}")
+        logger.error(f"[Agent 1] Error: {vision_results['error']}")
         return vision_results, telemetry
     
-    print(f"[Agent 1] Extraction complete!")
+    logger.info("[Agent 1] Extraction complete!")
     
     # Process each player found in the image
     enhanced_results = vision_results.copy()
@@ -270,7 +351,7 @@ def process_player_identification(image_path: str) -> tuple[dict, dict]:
             jersey_number = player.get("jersey_number", {}).get("value", "-1")
                         
             
-            print(f"\n[Agent 2] Searching for player {player_id}: Team={team_name}, Jersey={jersey_number}")
+            logger.info(f"[Agent 2] Searching for player {player_id}: Team={team_name}, Jersey={jersey_number}")
             
             # Agent 2: Search for player name
             if team_name != "Unknown" and jersey_number != -1:
@@ -284,29 +365,29 @@ def process_player_identification(image_path: str) -> tuple[dict, dict]:
                 
                 # Add player_name field with structured confidence
                 player["player_name"] = {
-                    "value": search_results.get("playerName", "Unknown"),
+                    "value": search_results.get("player_name", "Unknown"),
                     "confidence": search_results.get("confidence", "low")
                 }
                 
                 # Store full web search details for reference
                 player["web_search"] = search_results
                 
-                print(f"[Agent 2] Found: {player['player_name']['value']} (confidence: {player['player_name']['confidence']})")
+                logger.info(f"[Agent 2] Found: {player['player_name']['value']} (confidence: {player['player_name']['confidence']})")
                 if search_results.get("reasoning"):
-                    print(f"[Agent 2] Reasoning: {search_results['reasoning']}")
+                    logger.info(f"[Agent 2] Reasoning: {search_results['reasoning']}")
             else:
                 player["player_name"] = {
                     "value": "Unknown",
                     "confidence": "low"
                 }
                 player["web_search"] = {
-                    "playerName": "Unknown",
+                    "player_name": "Unknown",
                     "confidence": "low",
                     "error": "Insufficient information for web search (team or jersey number missing)",
                     "reasoning": "Team name or jersey number not available",
                     "sources": []
                 }
-                print(f"[Agent 2] Skipped - insufficient information")
+                logger.info("[Agent 2] Skipped - insufficient information")
     
     return enhanced_results, telemetry
 
@@ -316,14 +397,14 @@ if __name__=="__main__":
     test_image = "/Users/akshayranganath/Projects/aws-hackathon/player-identification/data/5.jpg"
     result, telemetry = process_player_identification(test_image)
     
-    print('\n' + '='*60)
-    print('**** Final Results ****')
-    print('='*60)
-    print(json.dumps(result, indent=2))
+    logger.info('\n' + '='*60)
+    logger.info('**** Final Results ****')
+    logger.info('='*60)
+    logger.info(json.dumps(result, indent=2))
     
-    print('\n' + '='*60)
-    print('**** Telemetry ****')
-    print('='*60)
-    print(f"Agent 1: Input tokens: {telemetry['agent_1']['input_tokens']}, Output tokens: {telemetry['agent_1']['output_tokens']}")
-    print(f"Agent 2: Input tokens: {telemetry['agent_2']['input_tokens']}, Output tokens: {telemetry['agent_2']['output_tokens']}")
-    print(f"Total: Input tokens: {telemetry['total']['input_tokens']}, Output tokens: {telemetry['total']['output_tokens']}")
+    logger.info('\n' + '='*60)
+    logger.info('**** Telemetry ****')
+    logger.info('='*60)
+    logger.info(f"Agent 1: Input tokens: {telemetry['agent_1']['input_tokens']}, Output tokens: {telemetry['agent_1']['output_tokens']}")
+    logger.info(f"Agent 2: Input tokens: {telemetry['agent_2']['input_tokens']}, Output tokens: {telemetry['agent_2']['output_tokens']}")
+    logger.info(f"Total: Input tokens: {telemetry['total']['input_tokens']}, Output tokens: {telemetry['total']['output_tokens']}")

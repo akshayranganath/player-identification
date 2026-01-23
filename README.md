@@ -4,6 +4,43 @@
 
 The purppose of the project is to identify the player in an image. When multiple players are shown, we should be able to identify at least the primary person shown in the image.
 
+## Usage
+
+### Streamlit Web App
+
+Run the Streamlit web application:
+
+```bash
+# Normal mode (INFO level logging)
+uv run streamlit run app.py
+
+# Verbose mode (DEBUG level logging)
+uv run streamlit run app.py -- --verbose
+```
+
+### CLI Application
+
+Run the command-line interface:
+
+```bash
+# Normal mode (INFO level logging)
+uv run main.py
+
+# Verbose mode (DEBUG level logging)
+uv run main.py --verbose
+# or shorthand
+uv run main.py -v
+```
+
+### Logging Levels
+
+- **INFO** (default): Shows important progress and results
+- **DEBUG** (verbose): Shows detailed debugging information including:
+  - Raw agent responses
+  - Web search queries and results
+  - Detailed parsing information
+  - Token usage for each agent call
+
 ## Workflow
 
 1. Take an image

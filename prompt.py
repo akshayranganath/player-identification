@@ -3,6 +3,16 @@ CFL Player Identification Prompt
 Prompt for identifying Canadian Football League players from images with JSON output
 """
 
+import logging
+
+# Configure logging (only if not already configured by parent app)
+if not logging.getLogger().hasHandlers():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+logger = logging.getLogger(__name__)
+
 CFL_PLAYER_IDENTIFICATION_PROMPT = """
 Analyze this image and identify any CFL (Canadian Football League) players visible. Return your analysis as valid JSON following this exact structure:
 
@@ -80,7 +90,12 @@ Example with mixed confidence:
   "overall_confidence": "high"
 }
 
-Return ONLY the JSON, no additional text before or after.
+CRITICAL RESPONSE REQUIREMENTS:
+- Your ENTIRE response must be valid JSON that can be parsed by json.loads()
+- Do NOT add any explanations, markdown formatting, or text outside the JSON
+- Do NOT wrap the JSON in ```json code blocks
+- Start your response with { and end with }
+- Return ONLY the JSON object, nothing else
 
 If you cannot identify any players with reasonable confidence, return:
 {
@@ -116,19 +131,26 @@ AUTHORITATIVE SOURCES:
 - sportsnet.ca
 
 RESPONSE FORMAT:
-Return ONLY valid JSON in this exact format:
+You MUST return ONLY a valid JSON object. Do NOT include any text before or after the JSON.
+
+Your response must be valid JSON that can be parsed by json.loads() in Python.
+
+Return exactly this structure:
 {
-  "playerName": "<player full name or 'Unknown'>",
+  "player_name": "<player full name or 'Unknown'>",
   "confidence": "<high|medium|low>",
   "reasoning": "<brief explanation of why you chose this name and confidence level>",
   "sources": ["<list of key sources used>"]
 }
 
 CRITICAL RULES:
-- If you cannot find a clear answer, set playerName to "Unknown" and confidence to "low"
+- If you cannot find a clear answer, set player_name to "Unknown" and confidence to "low"
 - Be conservative - if information is conflicting or unclear, lower the confidence
 - Prioritize information from authoritative sources
-- Return ONLY the JSON, no additional text
+- Your ENTIRE response must be valid JSON - nothing else
+- Do NOT add explanations, markdown formatting, or any text outside the JSON object
+- Do NOT wrap the JSON in ```json code blocks
+- Start your response with { and end with }
 """
 
 
@@ -144,6 +166,6 @@ def get_player_search_prompt():
 
 # Example usage
 if __name__ == "__main__":
-    print("CFL Player Identification Prompt")
-    print("=" * 50)
-    print(get_prompt())
+    logger.info("CFL Player Identification Prompt")
+    logger.info("=" * 50)
+    logger.info(get_prompt())
