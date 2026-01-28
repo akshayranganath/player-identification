@@ -1,0 +1,78 @@
+# ==============================================================================
+# Docker Ignore File
+# ==============================================================================
+# Exclude files from Docker build context to reduce image size and build time
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environments
+.env
+.venv
+venv/
+env/
+
+# Environment & Secrets (CRITICAL - never include in image)
+.env
+.env.*
+!.env.example
+*.env
+credentials.json
+secrets.json
+
+# Git
+.git/
+.gitignore
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+temp_*
+tmp_*
+*.tmp
+temp_image_*
+downloaded_*
+
+# CI/CD
+.github/
+
+# Data (include only necessary data)
+data/*.jpg
+data/*.png
+
+# Infrastructure files
+infrastructure/terraform/
+infrastructure/k8s/
+docker-compose.yml
+
+# Development files
+test.py
+test_*.py
+rename.py
+debug_*
