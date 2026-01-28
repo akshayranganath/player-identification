@@ -247,7 +247,7 @@ def download_image(url):
         return None
 
 
-def load_player_data(json_path='cfl_players.json'):
+def load_player_data(json_path='data/db/cfl_players.json'):
     """
     Load CFL player data from JSON file.
 

@@ -34,7 +34,6 @@ COPY app.py ./
 COPY prompt.py ./
 
 # Copy data files (player database)
-COPY cfl_players.json ./
 COPY data/db/ ./data/db/
 
 # Create directory for temporary images

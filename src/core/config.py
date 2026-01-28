@@ -106,7 +106,7 @@ class Settings(BaseSettings):
     # ==============================================================================
     
     player_db_path: str = Field(
-        default="data/cfl_players.json",
+        default="data/db/cfl_players.json",
         description="Path to player database JSON file"
     )
     

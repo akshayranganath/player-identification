@@ -381,7 +381,7 @@ RETRY_BACKOFF_FACTOR=2.0
 CIRCUIT_BREAKER_THRESHOLD=5
 
 # Database
-PLAYER_DB_PATH=cfl_players.json
+PLAYER_DB_PATH=data/db/cfl_players.json
 ```
 
 ### Security Best Practices

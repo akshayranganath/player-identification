@@ -38,18 +38,19 @@ from src.repositories.player_repository import PlayerRepository
 
 ### 2. **Organized Data Files**
 
-**Moved to `data/` directory:**
+**Moved to `data/db/` directory:**
 ```
 data/
-├── cfl_players.json    # Main player database (moved from root)
-├── cfl_players.csv     # CSV export (moved from root)
-├── players.json        # Sample data (moved from root)
+├── db/
+│   ├── cfl_players.json    # Main player database (moved from root → data → data/db)
+│   ├── cfl_players.csv     # CSV export (moved from root → data → data/db)
+│   └── players.json        # Sample data (moved from root → data → data/db)
 └── (existing image files)
 ```
 
 **Updated configuration:**
-- `src/core/config.py`: Changed default from `cfl_players.json` → `data/cfl_players.json`
-- `.env.example`: Added `PLAYER_DB_PATH` documentation
+- `src/core/config.py`: Changed default from `cfl_players.json` → `data/cfl_players.json` → `data/db/cfl_players.json`
+- `.env.example`: Updated `PLAYER_DB_PATH` documentation to reflect `data/db/` location
 
 ---
 
@@ -63,8 +64,8 @@ scripts/
 ```
 
 **Updated script:**
-- Now outputs to `data/cfl_players.csv` instead of root
-- Creates `data/` directory if it doesn't exist
+- Now outputs to `data/db/cfl_players.csv` instead of root
+- Creates `data/db/` directory if it doesn't exist
 
 ---
 
@@ -101,9 +102,10 @@ player-identification/
 │   └── utils/               # Helper functions
 │
 ├── data/                     # ✨ NEW - All data files
-│   ├── cfl_players.json    # Main database
-│   ├── cfl_players.csv     # CSV export
-│   ├── players.json        # Sample data
+│   ├── db/                 # Database files
+│   │   ├── cfl_players.json    # Main database
+│   │   ├── cfl_players.csv     # CSV export
+│   │   └── players.json        # Sample data
 │   └── (images)            # Image files
 │
 ├── scripts/                  # Utility scripts
@@ -152,7 +154,7 @@ uv run streamlit run app.py -- --verbose
 # Fetch fresh data from CFL API
 uv run python scripts/fetch_player_mapping.py
 
-# Output goes to: data/cfl_players.csv
+# Output goes to: data/db/cfl_players.csv
 ```
 
 ### 3. View Legacy Code (Reference Only)

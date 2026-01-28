@@ -254,10 +254,10 @@ curl http://localhost:8501/_stcore/health
 ### Backup Player Database
 ```bash
 # Backup
-cp cfl_players.json cfl_players.json.backup.$(date +%Y%m%d)
+cp data/db/cfl_players.json data/db/cfl_players.json.backup.$(date +%Y%m%d)
 
 # Restore
-cp cfl_players.json.backup.20260128 cfl_players.json
+cp data/db/cfl_players.json.backup.20260128 data/db/cfl_players.json
 ```
 
 ### Backup Configuration

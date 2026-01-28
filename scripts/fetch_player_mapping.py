@@ -83,7 +83,7 @@ def fetch_players_from_api() -> list[dict]:
     return players
 
 
-def save_to_csv(players: list[dict], filename: str = "data/cfl_players.csv") -> None:
+def save_to_csv(players: list[dict], filename: str = "data/db/cfl_players.csv") -> None:
     """Save player data to CSV file."""
     if not players:
         print("No players to save!")
