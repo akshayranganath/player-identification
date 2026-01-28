@@ -1,0 +1,70 @@
+# ==============================================================================
+# Docker Compose - Local Development Environment
+# ==============================================================================
+# Provides full development stack with app, Redis cache, and dependencies
+#
+# Usage:
+#   docker-compose -f infrastructure/docker/docker-compose.yml up
+#   docker-compose -f infrastructure/docker/docker-compose.yml down
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # Main application
+  app:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      # AWS Configuration (from host environment)
+      - AWS_PROFILE=${AWS_PROFILE:-default}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      # Application settings
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+    env_file:
+      - ../../.env
+    volumes:
+      # Mount source code for hot reload during development
+      - ../../src:/app/src
+      - ../../app.py:/app/app.py
+      - ../../prompt.py:/app/prompt.py
+      # Mount AWS credentials (read-only)
+      - ~/.aws:/root/.aws:ro
+      # Mount data directory
+      - ../../data:/app/data
+      # Named volume for temp images
+      - temp_images:/app/temp_images
+    depends_on:
+      - redis
+    networks:
+      - player-id-network
+    restart: unless-stopped
+  
+  # Redis for caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - player-id-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  temp_images:
+  redis_data:
+
+networks:
+  player-id-network:
+    driver: bridge
