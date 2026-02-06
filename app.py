@@ -19,6 +19,7 @@ from main import (
 )
 from utils import process_player_identification
 import os
+from pathlib import Path
 
 # Parse command line arguments for verbose flag
 verbose_mode = False
@@ -38,6 +39,16 @@ if verbose_mode:
     logger.info("Verbose logging enabled (DEBUG level)")
 else:
     logger.info("Standard logging enabled (INFO level)")
+
+
+def load_css():
+    """Load custom CSS styles from external file."""
+    css_file = Path(__file__).parent / "static" / "styles.css"
+    if css_file.exists():
+        with open(css_file) as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    else:
+        logger.warning(f"CSS file not found: {css_file}")
 
 
 def identify_players(image_url: str) -> tuple[str | None, list[dict], dict]:
@@ -94,80 +105,189 @@ def cleanup_temp_image(image_path: str) -> None:
 st.set_page_config(
     page_title="CFL Player Identification",
     page_icon="🏈",
-    layout="centered",
+    layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
-# Title
-st.title("🏈 CFL Player Identification")
-st.markdown("Enter an image URL to identify CFL players in the photo.")
+# Load custom CSS
+load_css()
 
-# Input
+# Header Section
+st.markdown('<h1 class="main-title">🏈 CFL Player Identification</h1>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">Powered by AI - Identify Canadian Football League players from any image</p>', unsafe_allow_html=True)
+
+# Hero Section - Input Card
+#st.markdown('<div class="cfl-card hero-card">', unsafe_allow_html=True)
+st.markdown("### Enter Image URL")
+st.markdown("Provide a URL to an image containing CFL players to identify them automatically.")
+
 image_url = st.text_input(
     "Image URL",
-    placeholder="https://example.com/image.jpg",
+    placeholder="https://example.com/cfl-game-photo.jpg",
     help="Enter the URL of an image containing CFL players",
+    label_visibility="collapsed",
 )
 
+# Center the button
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    process_button = st.button("Identify Players ▶", type="primary", disabled=not image_url)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Instructions section (shown before processing)
+if not process_button:
+    st.markdown('<br>', unsafe_allow_html=True)    
+    st.markdown("### 📋 How It Works")
+    
+    col_inst1, col_inst2, col_inst3 = st.columns(3)
+    
+    with col_inst1:
+        st.markdown("**1️⃣ Enter Image URL**")
+        st.markdown("Provide a direct link to an image containing CFL players in action.")
+    
+    with col_inst2:
+        st.markdown("**2️⃣ AI Analysis**")
+        st.markdown("Our AI agents analyze the image to detect player jerseys and numbers.")
+    
+    with col_inst3:
+        st.markdown("**3️⃣ Get Results**")
+        st.markdown("View identified players with their names, numbers, and teams instantly.")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Sample images section
+    st.markdown('<br>', unsafe_allow_html=True)    
+    st.markdown("### 💡 Tips for Best Results")
+    st.markdown("""
+    - Use images with clear, visible player jerseys
+    - Ensure jersey numbers are readable
+    - Works best with front-facing or side-view shots
+    - Higher resolution images yield better results
+    - Multiple players can be identified in a single image
+    """)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 # Process button
-if st.button("Identify Players", type="primary", disabled=not image_url):
+if process_button:
     if image_url:
-        with st.spinner("Analyzing image..."):
+        with st.spinner("🔍 Analyzing image and identifying players..."):
             try:
                 image_path, players, telemetry = identify_players(image_url)
                 
-                # Show the image thumbnail
-                st.subheader("Image")
-                st.image(image_url, width=300)
+                # Divider
+                st.markdown('<hr class="cfl-divider">', unsafe_allow_html=True)
                 
-                # Show results
-                st.subheader("Identified Players")
+                # Results Section with Columns
+                st.markdown('<div class="fade-in">', unsafe_allow_html=True)
                 
-                if players:
-                    # Create table data with explicit headers
-                    table_data = {
-                        "Player Name": [],
-                        "Number": [],
-                        "Team": []
-                    }
+                # Create two-column layout
+                col_img, col_results = st.columns([1, 2], gap="large")
+                
+                with col_img:
+                    # Image Card
                     
-                    for player in players:
-                        table_data["Player Name"].append(player.get("player_name", "Unknown"))
-                        table_data["Number"].append(player.get("player_number", "?"))
-                        table_data["Team"].append(player.get("player_team", "Unknown"))
-                    
-                    # Display as DataFrame table
-                    df = pd.DataFrame(table_data)
-                    st.table(df)
-                else:
-                    st.info("No players identified with high confidence.")
+                    st.markdown('<h2 class="result-header">Image</h2>', unsafe_allow_html=True)
+                    st.image(image_url, use_container_width=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
                 
-                # Show telemetry information
+                with col_results:
+                    # Players Card
+                    
+                    
+                    if players:
+                        player_count = len(players)
+                        st.markdown(
+                            f'<h2 class="result-header">Identified Players <span class="player-count-badge">{player_count} Found</span></h2>', 
+                            unsafe_allow_html=True
+                        )
+                        
+                        # Create table data with explicit headers
+                        table_data = {
+                            "Player Name": [],
+                            "Number": [],
+                            "Team": []
+                        }
+                        
+                        for player in players:
+                            table_data["Player Name"].append(player.get("player_name", "Unknown"))
+                            table_data["Number"].append(player.get("player_number", "?"))
+                            table_data["Team"].append(player.get("player_team", "Unknown"))
+                        
+                        # Display as DataFrame table
+                        df = pd.DataFrame(table_data)
+                        st.table(df)
+                    else:
+                        st.markdown('<h2 class="result-header">Identified Players</h2>', unsafe_allow_html=True)
+                        st.info("⚠️ No players identified with high confidence. Try an image with clearer player jerseys and numbers.")
+                    
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Telemetry Section (Collapsible)
                 if telemetry:
-                    st.subheader("Token Usage")
-                    telemetry_data = {
-                        "Agent": ["Agent 1", "Agent 2", "Total"],
-                        "Input Tokens": [
-                            telemetry.get("agent_1", {}).get("input_tokens", 0),
-                            telemetry.get("agent_2", {}).get("input_tokens", 0),
-                            telemetry.get("total", {}).get("input_tokens", 0)
-                        ],
-                        "Output Tokens": [
-                            telemetry.get("agent_1", {}).get("output_tokens", 0),
-                            telemetry.get("agent_2", {}).get("output_tokens", 0),
-                            telemetry.get("total", {}).get("output_tokens", 0)
-                        ]
-                    }
-                    telemetry_df = pd.DataFrame(telemetry_data)
-                    st.table(telemetry_df)
+                    #st.markdown('<br>', unsafe_allow_html=True)
+                    with st.expander("📊 Token Usage & Performance Metrics", expanded=False):
+                        # Create metrics in columns
+                        metric_col1, metric_col2, metric_col3 = st.columns(3)
+                        
+                        with metric_col1:
+                            #st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                            st.markdown(f'<div class="metric-value">{telemetry.get("total", {}).get("input_tokens", 0):,}</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="metric-label">Total Input Tokens</div>', unsafe_allow_html=True)
+                            st.markdown('</div>', unsafe_allow_html=True)
+                        
+                        with metric_col2:
+                            #st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                            st.markdown(f'<div class="metric-value">{telemetry.get("total", {}).get("output_tokens", 0):,}</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="metric-label">Total Output Tokens</div>', unsafe_allow_html=True)
+                            st.markdown('</div>', unsafe_allow_html=True)
+                        
+                        with metric_col3:
+                            total_tokens = (
+                                telemetry.get("total", {}).get("input_tokens", 0) + 
+                                telemetry.get("total", {}).get("output_tokens", 0)
+                            )
+                            #st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                            st.markdown(f'<div class="metric-value">{total_tokens:,}</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="metric-label">Total Tokens</div>', unsafe_allow_html=True)
+                            st.markdown('</div>', unsafe_allow_html=True)
+                        
+                        # Detailed breakdown table
+                        st.markdown("#### Detailed Breakdown by Agent")
+                        telemetry_data = {
+                            "Agent": ["Agent 1 (Image Analysis)", "Agent 2 (Validation)", "Total"],
+                            "Input Tokens": [
+                                f"{telemetry.get('agent_1', {}).get('input_tokens', 0):,}",
+                                f"{telemetry.get('agent_2', {}).get('input_tokens', 0):,}",
+                                f"{telemetry.get('total', {}).get('input_tokens', 0):,}"
+                            ],
+                            "Output Tokens": [
+                                f"{telemetry.get('agent_1', {}).get('output_tokens', 0):,}",
+                                f"{telemetry.get('agent_2', {}).get('output_tokens', 0):,}",
+                                f"{telemetry.get('total', {}).get('output_tokens', 0):,}"
+                            ]
+                        }
+                        telemetry_df = pd.DataFrame(telemetry_data)
+                        st.table(telemetry_df)
                 
                 # Cleanup temp file
                 cleanup_temp_image(image_path)
                 
             except Exception as e:
                 logger.error(f"Error processing image: {str(e)}", exc_info=True)
-                st.error(f"Error processing image: {str(e)}")
+                st.error(f"❌ Error processing image: {str(e)}")
 
 # Footer
-st.markdown("---")
-st.caption("Powered by AWS Bedrock & Strands Agents")
+st.markdown('<hr class="footer-divider">', unsafe_allow_html=True)
+st.markdown(
+    """
+    <div class="custom-footer">
+        <strong>Powered by AWS Bedrock & Strands Agents</strong><br>
+        CFL Player Identification System © 2026
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 

@@ -1,0 +1,518 @@
+/* CFL Player Identification - Custom Styles */
+/* 
+ * CSS Specificity Strategy:
+ * - Use high specificity selectors instead of !important where possible
+ * - !important is only used where Streamlit applies inline styles or very high specificity
+ * - Custom classes never need !important
+ */
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&family=Bebas+Neue&display=swap');
+
+/* CSS Variables - CFL Color Palette */
+:root {
+    --cfl-red: #C8102E;
+    --cfl-dark-red: #A00D24;
+    --cfl-black: #000000;
+    --cfl-dark-gray: #2B2B2B;
+    --cfl-medium-gray: #666666;
+    --cfl-light-gray: #F5F5F5;
+    --cfl-white: #FFFFFF;
+    --cfl-border: #DDDDDD;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Global Styles */
+.stApp {
+    background-color: var(--cfl-light-gray);
+}
+
+/* Remove top padding/margin from app - requires !important to override Streamlit inline styles */
+.stApp > header {
+    background-color: transparent !important;
+}
+
+section.main > div {
+    padding-top: 0 !important;
+}
+
+/* Hide Streamlit branding and deploy button */
+#MainMenu {
+    visibility: hidden;
+}
+
+footer {
+    visibility: hidden;
+}
+
+/* Hide the Deploy button in top-right corner */
+.stDeployButton {
+    visibility: hidden;
+}
+
+/* Alternative: hide the entire toolbar if needed */
+header[data-testid="stHeader"] {
+    display: none;
+}
+
+/* Typography - Scoped to avoid affecting Streamlit components */
+.stApp .main h1,
+.stApp .main h2,
+.stApp .main h3,
+.stApp .main h4,
+.stApp .main h5,
+.stApp .main h6 {
+    font-family: 'Oswald', sans-serif;
+    color: var(--cfl-dark-gray);
+    font-weight: 600;
+}
+
+.stApp .main p,
+.cfl-card *,
+.custom-footer,
+.main-title,
+.subtitle {
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Main Title Styling - Custom class, no !important needed */
+.main-title {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 3.5rem;
+    color: var(--cfl-red);
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    padding-top: 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.subtitle {
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.2rem;
+    color: var(--cfl-medium-gray);
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+/* Header Section */
+.header-container {
+    background: linear-gradient(135deg, var(--cfl-red) 0%, var(--cfl-dark-red) 100%);
+    padding: 2rem 1rem;
+    border-radius: 0;
+    margin: -5rem -5rem 2rem -5rem;
+    box-shadow: var(--shadow-lg);
+}
+
+/* Card Containers - Custom classes, no !important needed */
+.cfl-card {
+    background-color: var(--cfl-white);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--cfl-border);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cfl-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.hero-card {
+    background: linear-gradient(to bottom, var(--cfl-white) 0%, var(--cfl-light-gray) 100%);
+    border-left: 4px solid var(--cfl-red);
+}
+
+/* Hero card typography */
+.hero-card h3 {
+    color: var(--cfl-red);
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.hero-card p {
+    color: var(--cfl-medium-gray);
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Input Styling - Higher specificity to override Streamlit */
+.stApp .main .block-container .stTextInput > div > div > input {
+    font-family: 'Roboto', sans-serif;
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--cfl-border);
+    border-radius: 8px;
+    transition: border-color 0.2s ease;
+}
+
+.stApp .main .block-container .stTextInput > div > div > input:focus {
+    border-color: var(--cfl-red);
+    box-shadow: 0 0 0 2px rgba(200, 16, 46, 0.1);
+}
+
+/* Button Styling - Higher specificity to override Streamlit */
+.stApp .main .block-container .stButton > button {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background-color: var(--cfl-red);
+    color: var(--cfl-white);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 2.5rem;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-md);
+    width: 100%;
+}
+
+.stApp .main .block-container .stButton > button:hover {
+    background-color: var(--cfl-dark-red);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stApp .main .block-container .stButton > button:active {
+    transform: translateY(0);
+}
+
+.stApp .main .block-container .stButton > button:disabled {
+    background-color: var(--cfl-medium-gray);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Subtle pulse animation for primary button */
+.stApp .main .block-container .stButton > button[kind="primary"] {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.stApp .main .block-container .stButton > button[kind="primary"]:hover {
+    animation: none;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 4px 6px rgba(200, 16, 46, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(200, 16, 46, 0.5);
+    }
+}
+
+/* Table Styling - Higher specificity for Streamlit tables */
+.stApp .main .dataframe {
+    font-family: 'Roboto', sans-serif;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.stApp .main .dataframe thead tr {
+    background-color: var(--cfl-red);
+    color: var(--cfl-white);
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stApp .main .dataframe thead th {
+    padding: 1rem;
+    text-align: left;
+    border: none;
+    color: var(--cfl-white);
+}
+
+.stApp .main .dataframe tbody tr {
+    border-bottom: 1px solid var(--cfl-border);
+    transition: background-color 0.2s ease;
+}
+
+.stApp .main .dataframe tbody tr:nth-child(even) {
+    background-color: var(--cfl-light-gray);
+}
+
+.stApp .main .dataframe tbody tr:hover {
+    background-color: rgba(200, 16, 46, 0.05);
+}
+
+.stApp .main .dataframe tbody tr:hover td {
+    font-weight: 500;
+}
+
+.stApp .main .dataframe tbody td {
+    padding: 0.875rem 1rem;
+    color: var(--cfl-dark-gray);
+}
+
+/* Player number styling in table - emphasize jersey numbers */
+.stApp .main .dataframe tbody td:nth-child(2) {
+    font-weight: 700;
+    color: var(--cfl-red);
+    font-size: 1.1rem;
+}
+
+/* Team name emphasis */
+.stApp .main .dataframe tbody td:nth-child(3) {
+    font-weight: 600;
+}
+
+/* Image Styling - Higher specificity */
+.stApp .main .stImage {
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.stApp .main .stImage > img {
+    border-radius: 12px;
+}
+
+/* Subheader Styling - Custom class */
+.result-header {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.8rem;
+    color: var(--cfl-red);
+    border-bottom: 3px solid var(--cfl-red);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    display: inline-block;
+}
+
+.result-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background-color: var(--cfl-red);
+}
+
+/* Alert Messages - Higher specificity for Streamlit */
+.stApp .main .stAlert {
+    border-radius: 8px;
+    font-family: 'Roboto', sans-serif;
+}
+
+.stApp .main .stInfo {
+    background-color: rgba(200, 16, 46, 0.1);
+    border-left: 4px solid var(--cfl-red);
+}
+
+.stApp .main .stSuccess {
+    background-color: rgba(0, 128, 0, 0.1);
+    border-left: 4px solid #00CC00;
+    border-radius: 8px;
+    font-family: 'Roboto', sans-serif;
+}
+
+.stApp .main .stError {
+    background-color: rgba(200, 16, 46, 0.1);
+    border-left: 4px solid var(--cfl-red);
+    border-radius: 8px;
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Spinner - Higher specificity */
+.stApp .main .stSpinner > div {
+    border-top-color: var(--cfl-red);
+}
+
+.stApp .main .stSpinner > div > div {
+    border-top-color: var(--cfl-red);
+    border-right-color: var(--cfl-red);
+}
+
+/* Expander Styling - Higher specificity for Streamlit */
+.stApp .main .streamlit-expanderHeader {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.2rem;
+    color: var(--cfl-dark-gray);
+    background-color: var(--cfl-light-gray);
+    border-radius: 8px;
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.stApp .main .streamlit-expanderHeader:hover {
+    background-color: rgba(200, 16, 46, 0.05);
+}
+
+.stApp .main .streamlit-expanderHeader svg {
+    fill: var(--cfl-red);
+}
+
+/* Metric Cards - Custom class */
+.metric-card {
+    background: linear-gradient(135deg, var(--cfl-white) 0%, var(--cfl-light-gray) 100%);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--cfl-border);
+    border-left: 3px solid var(--cfl-red);
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-left-width: 5px;
+}
+
+.metric-value {
+    font-family: 'Oswald', sans-serif;
+    font-size: 2rem;
+    color: var(--cfl-red);
+    font-weight: 700;
+}
+
+.metric-label {
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.9rem;
+    color: var(--cfl-medium-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Footer Styling - Custom class */
+.custom-footer {
+    text-align: center;
+    padding: 2rem 1rem;
+    margin-top: 3rem;
+    background-color: var(--cfl-dark-gray);
+    color: var(--cfl-white);
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.9rem;
+    border-top: 4px solid var(--cfl-red);
+}
+
+.custom-footer::before {
+    content: "🏈";
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.footer-divider {
+    border: none;
+    border-top: 2px solid var(--cfl-border);
+    margin: 2rem 0;
+}
+
+/* Badge Styling - Custom class */
+.player-count-badge {
+    display: inline-block;
+    background-color: var(--cfl-red);
+    color: var(--cfl-white);
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    margin-left: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Loading Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Custom Divider */
+.cfl-divider {
+    height: 3px;
+    background: linear-gradient(to right, transparent, var(--cfl-red), transparent);
+    border: none;
+    margin: 1rem 0 1.5rem 0;
+}
+
+/* Smooth transitions for interactive elements only - targeted instead of universal selector */
+button,
+input,
+a,
+.cfl-card,
+.metric-card,
+.stButton > button,
+.dataframe tbody tr {
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+/* Focus states for accessibility - requires !important to ensure visibility */
+.stApp input:focus,
+.stApp button:focus {
+    outline: 2px solid var(--cfl-red) !important;
+    outline-offset: 2px !important;
+}
+
+/* Layout overrides - requires !important to override Streamlit's inline styles */
+.stApp .main .block-container {
+    padding-top: 1rem !important;
+    padding-bottom: 3rem !important;
+    max-width: 1400px !important;
+}
+
+/* Column Spacing */
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .main-title {
+        font-size: 2.5rem;
+    }
+    
+    .cfl-card {
+        padding: 1.5rem;
+    }
+    
+    .stApp .main .block-container .stButton > button {
+        font-size: 1rem;
+        padding: 0.6rem 2rem;
+    }
+}
+
+@media (max-width: 1024px) {
+    .stApp .main .block-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+}
