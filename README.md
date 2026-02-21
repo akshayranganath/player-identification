@@ -41,9 +41,8 @@ This application uses a multi-agent approach to identify CFL players in images:
    ```
 
 4. **Run the application**
-   ```bash
-   uv run streamlit run app.py
-   ```
+   - Web UI: `uv run streamlit run app.py`
+   - REST API: `uv run uvicorn api:app --reload --port 8000`
 
 ## Usage
 
@@ -64,6 +63,25 @@ uv run streamlit run app.py -- --verbose
 2. Click "Identify Players"
 3. View identified players with confidence scores
 4. See token usage telemetry
+
+### FastAPI (REST)
+
+The same functionality is available as a REST API. Run the server:
+
+```bash
+uv run uvicorn api:app --reload --port 8000
+```
+
+- **API base:** `http://localhost:8000`
+- **OpenAPI docs:** `http://localhost:8000/docs`
+- **Health check:** `GET http://localhost:8000/health`
+- **Identify players:** `POST http://localhost:8000/identify-players` with JSON body:
+
+  ```json
+  { "image_url": "https://example.com/cfl-game-photo.jpg" }
+  ```
+
+  Response: `{ "image_url": "...", "players": [{ "player_name", "player_number", "player_team" }], "telemetry": { "agent_1", "agent_2", "total" } }`
 
 ### Logging Levels
 
